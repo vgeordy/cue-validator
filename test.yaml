@@ -1,0 +1,201 @@
+dictname: evaluate
+initlist:
+    client-server:
+        name: client-server
+        useyaml: true
+        params:
+            client: 
+                pattern: SimpleWeb
+                label: client
+                response:
+                    - inedge:
+                        srclabel: client
+                        msgtype: initiate
+                      outedge:
+                        msgtype: request
+                        dstlabel: server
+                      period: 1
+                    - inedge:
+                        srclabel: server
+                        msgtype: response
+                      outedge:
+                        msgtype: ""
+                        dstlabel: ""
+                      period: 1
+            server: 
+                pattern: SimpleWeb
+                label: server
+                response:
+                    - inedge:
+                        srclabel: client
+                        msgtype: request
+                      outedge:
+                        msgtype: response
+                        dstlabel: client
+                      period: 0
+        msgs:
+            - msgtype: initiate
+              pcktlen: 100
+              msglen: 1500
+            - msgtype: request
+              pcktlen: 250
+              msglen: 1500
+            - msgtype: response
+              pcktlen: 1500
+              msglen: 1500
+    simple-AES-chain:
+        name: simple-AES-chain
+        useyaml: true
+        params:
+            consumer: 
+                pattern: AESChain
+                label: consumer
+                response:
+                    - inedge:
+                        srclabel: decrypt
+                        msgtype: decrypted
+                      outedge:
+                        msgtype: ""
+                        dstlabel: ""
+                      period: 1
+            decrypt: 
+                pattern: AESChain
+                label: decrypt
+                response:
+                    - inedge:
+                        srclabel: encrypt
+                        msgtype: encrypted
+                      outedge:
+                        msgtype: decrypted
+                        dstlabel: consumer
+                      period: 1
+            encrypt: 
+                pattern: AESChain
+                label: encrypt
+                response:
+                    - inedge:
+                        srclabel: src
+                        msgtype: data
+                      outedge:
+                        msgtype: encrypted
+                        dstlabel: decrypt
+                      period: 1
+            src: 
+                pattern: AESChain
+                label: src
+                response:
+                    - inedge:
+                        srclabel: src
+                        msgtype: initiate
+                      outedge:
+                        msgtype: data
+                        dstlabel: encrypt
+                      period: 1.25
+        msgs:
+            - msgtype: initiate
+              pcktlen: 50
+              msglen: 1500
+            - msgtype: data
+              pcktlen: 1000
+              msglen: 1500
+            - msgtype: encrypted
+              pcktlen: 500
+              msglen: 1500
+            - msgtype: decrypted
+              pcktlen: 500
+              msglen: 1500
+            - msgtype: consume
+              pcktlen: 1000
+              msglen: 1500
+            - msgtype: initiate
+              pcktlen: 25
+              msglen: 1500
+            - msgtype: data
+              pcktlen: 500
+              msglen: 1500
+            - msgtype: encrypted
+              pcktlen: 250
+              msglen: 1500
+            - msgtype: decrypted
+              pcktlen: 250
+              msglen: 1500
+            - msgtype: consume
+              pcktlen: 500
+              msglen: 1500
+    simple-det-test:
+        name: simple-det-test
+        useyaml: true
+        params:
+            consumer1: 
+                pattern: DeterministicTest
+                label: consumer1
+                response:
+                    - inedge:
+                        srclabel: consumer1
+                        msgtype: result
+                      outedge:
+                        msgtype: ""
+                        dstlabel: ""
+                      period: 1
+            consumer2: 
+                pattern: DeterministicTest
+                label: consumer2
+                response:
+                    - inedge:
+                        srclabel: consumer2
+                        msgtype: result
+                      outedge:
+                        msgtype: ""
+                        dstlabel: ""
+                      period: 1
+            select: 
+                pattern: DeterministicTest
+                state:
+                    FuncSelect: test
+                    testflag: "true"
+                label: select
+                funcselect: test
+                response:
+                    - inedge:
+                        srclabel: src
+                        msgtype: marked
+                      outedge:
+                        msgtype: result
+                        dstlabel: consumer1
+                      period: 1
+                      choice: "true"
+                    - inedge:
+                        srclabel: src
+                        msgtype: marked
+                      outedge:
+                        msgtype: result
+                        dstlabel: consumer2
+                      period: 1
+                      choice: "false"
+            src: 
+                pattern: DeterministicTest
+                state:
+                    FuncSelect: mark
+                    failperiod: "1000"
+                label: src
+                funcselect: mark
+                response:
+                    - inedge:
+                        srclabel: src
+                        msgtype: initiate
+                      outedge:
+                        msgtype: marked
+                        dstlabel: select
+                      period: 1
+                      choice: "10000"
+        msgs:
+            - msgtype: initiate
+              pcktlen: 250
+              msglen: 1500
+            - msgtype: marked
+              pcktlen: 250
+              msglen: 1500
+            - msgtype: result
+              pcktlen: 250
+              msglen: 1500
+    
